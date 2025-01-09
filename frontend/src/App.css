@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#google_translate_element .goog-te-gadget span {
+    display: none !important;
+  }
+  
+  .goog-logo-link {
+    display: none !important;
+  }
+  
+  .goog-te-gadget {
+    font-size: 0 !important; /* Optionally hide the remaining text */
+  }
+  body {
+    top: 0 !important;
+  }
+  .VIpgJd-ZVi9od-ORHb-OEVmcd{
+    display: none;
+  }  
+  .goog-te-gadget img{
+      background-image: url('./images/Vector.svg') !important;
+}
+.goog-te-gadget-icon{
+    background-image: none !important;
+  }
+  /* .VIpgJd-ZVi9od-vH1Gmf-ibnC6b div, .VIpgJd-ZVi9od-vH1Gmf-ibnC6b:link div, .VIpgJd-ZVi9od-vH1Gmf-ibnC6b:visited div, .VIpgJd-ZVi9od-vH1Gmf-ibnC6b:active div{
+    color: black !important;
+  } */
+  .VIpgJd-ZVi9od-vH1Gmf{
+    border: 1px solid black !important;
+    color: black !important;
+  }
