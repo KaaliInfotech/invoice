@@ -17,6 +17,14 @@ module.exports.signup = async (req, res) => {
     });
   }
 
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      message: "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
+    });
+  }
+
   if (password !== confirmpassword) {
     return res.status(400).json({
       message: "Password and confirm password do not match",

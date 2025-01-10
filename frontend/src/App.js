@@ -107,7 +107,6 @@ function MainContent() {
           <Route path="/myaccount" element={<MyAccount />} />
           <Route path="/upgrade" element={<Upgrade />} />
           <Route path="/custom" element={<Custom />} />
-          <Route path="/phonepe" element={<PaymentForm />} />
         </Routes>
       </main>
       {!isNoFooter && <Footer />}

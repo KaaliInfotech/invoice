@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { signup } from "../api";
 import { useNavigate } from "react-router-dom";
-import LogoIcon from '../images/logo.svg';
+import LogoIcon from "../images/logo.svg";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -11,17 +11,36 @@ const Signup = () => {
     confirmpassword: "",
   });
   const navigate = useNavigate();
-
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
+      const errors = {};
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      
+      
+      // Validate each field
+      if (!formData.firstname) errors.firstname = "This field is required.";
+      if (!formData.email) errors.email = "This field is required.";
+      if (!formData.password) {
+        errors.password = "This field is required.";
+      } else if (!passwordRegex.test(formData.password)) {
+        errors.password = "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.";
+      }
+      
+      if (!formData.confirmpassword)
+        errors.confirmpassword = "This field is required.";
+      
+      setFormErrors(errors);
+      setIsSubmitted(true);
       const response = await signup(formData);
       if (response) {
         navigate("/verifyotp", {
           state: {
             email: formData.email,
             password: formData.password,
-            action: "register"
+            action: "register",
           },
         });
       }
@@ -29,6 +48,7 @@ const Signup = () => {
       console.log(err.message || "Signup failed");
     }
   };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <div className="w-full max-w-md bg-white shadow-md rounded-lg px-8 py-8">
@@ -45,12 +65,18 @@ const Signup = () => {
             <input
               type="text"
               placeholder="Please enter your name"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                isSubmitted && formErrors.name ? "border-red-500" : ""
+              }`}
               onChange={(e) =>
                 setFormData({ ...formData, firstname: e.target.value })
               }
-              required
             />
+            {isSubmitted && formErrors.firstname && (
+              <p className="text-red-500 text-sm mt-1">
+                {formErrors.firstname}
+              </p>
+            )}
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-medium mb-1">
@@ -59,12 +85,16 @@ const Signup = () => {
             <input
               type="email"
               placeholder="Please enter your email"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                isSubmitted && formErrors.name ? "border-red-500" : ""
+              }`}
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              required
             />
+            {isSubmitted && formErrors.email && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>
+            )}
           </div>
 
           <div className="mb-4">
@@ -74,12 +104,16 @@ const Signup = () => {
             <input
               type="password"
               placeholder="Enter password"
-              className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                isSubmitted && formErrors.name ? "border-red-500" : ""
+              }`}
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              required
             />
+            {isSubmitted && formErrors.password && (
+              <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+            )}
             <div className="mb-4">
               <label className="block text-gray-700 font-medium mb-1">
                 Confirm Password
@@ -87,23 +121,26 @@ const Signup = () => {
               <input
                 type="password"
                 placeholder="Enter confirm password"
-                className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  isSubmitted && formErrors.name ? "border-red-500" : ""
+                }`}
                 onChange={(e) =>
                   setFormData({ ...formData, confirmpassword: e.target.value })
                 }
-                required
               />
+              {isSubmitted && formErrors.confirmpassword && (
+                <p className="text-red-500 text-sm mt-1">
+                  {formErrors.confirmpassword}
+                </p>
+              )}
             </div>
-            {/* <a href="#" className="text-sm text-blue-500 hover:underline mt-1">
-                  Forget Password?
-                </a> */}
           </div>
 
           <button
             type="submit"
             className="w-full bg-blue-600 text-white font-semibold py-2 rounded-md hover:bg-blue-700 transition duration-200"
           >
-            Sign In
+            Sign Up
           </button>
         </form>
 

@@ -159,7 +159,7 @@ const Invoicecreate = () => {
 
   const saveSignature = () => {
     const signatureDataUrl = signaturePadRef.current.toDataURL("image/png");
-    const byteString = atob(signatureDataUrl.split(",")[1]); // Decode the base64 string
+    const byteString = atob(signatureDataUrl.split(",")[1]);
     const arrayBuffer = new ArrayBuffer(byteString.length);
     const uintArray = new Uint8Array(arrayBuffer);
 
@@ -167,19 +167,17 @@ const Invoicecreate = () => {
       uintArray[i] = byteString.charCodeAt(i);
     }
 
-    // Create a Blob from the byte array
     const signatureBlob = new Blob([uintArray], { type: "image/png" });
 
-    // Create a file from the Blob
     const signatureFile = new File([signatureBlob], "signature.png", {
       type: "image/png",
     });
 
-    // Save the signature file and mark it as saved
     setSavedSignature(signatureFile);
     setSignLogo(signatureFile);
     setIsSignatureSaved(true);
-    console.log(signatureFile); // This is the File object, which can be sent to the backend
+    setIsModalOpen(false)
+    console.log(signatureFile);
   };
 
   const clearSignature = () => {
@@ -239,6 +237,12 @@ const Invoicecreate = () => {
     address: "",
   };
   const [formData, setFormData] = useState(initialFormData);
+  const [isFocused, setIsFocused] = React.useState({
+    name: false,
+    mobileNumber: false,
+    email: false,
+    address: false,
+  });
   const [companyData, setcompanyData] = useState({
     date: "",
     dueDate: "",
@@ -302,6 +306,21 @@ const Invoicecreate = () => {
   const handleChange55 = (event) => {
     const value = event.target.value;
     setTaxRate(value ? Number(value) : 0); // Ensure taxRate is a valid number
+  };
+
+  const handleFocusTaxRate = (e) => {
+    setTaxRate(""); // Clear the field when focused
+  };
+
+  const handleBlurAmountPaid = () => {
+    if (!amountPaid) {
+      setAmountPaid(0); // Restore a default value if left empty
+    }
+  };
+  
+
+  const handleFocusAmountPaid = () => {
+    setAmountPaid(""); // Clear the field when focused
   };
 
   const handleChange56 = (event) => {
@@ -394,8 +413,6 @@ const Invoicecreate = () => {
     if (!formData.address) errors.address = "This field is required.";
 
     setFormErrors(errors);
-
-    // if (Object.keys(errors).length > 0) return;
 
     try {
       const response = await fetch(
@@ -526,7 +543,6 @@ const Invoicecreate = () => {
       }
     });
 
-    // Validate each field in requiredFields
     Object.keys(requiredFields).forEach((field) => {
       if (!companyData[field] && field in companyData) {
         errors[field] = `${requiredFields[field]} is required.`;
@@ -538,20 +554,17 @@ const Invoicecreate = () => {
       }
     });
 
-    // If there are errors, set them and prevent form submission
     if (hasError) {
       setFormErrors(errors);
-      return; // Stop execution if there are errors
+      return;
     }
     if (validateItems()) {
-      // Proceed with save logic
       console.log("Items are valid, proceed with saving.");
     } else {
       console.log("Please fill in all required fields.");
     }
 
     const userId = getUserIdFromToken();
-    console.log(userId, "IDUSER");
 
     const formData = new FormData();
 
@@ -711,6 +724,14 @@ const Invoicecreate = () => {
     } catch (error) {
       console.error("Error fetching invoice data:", error);
     }
+  };
+  const handleFocus = (index, e) => {
+    const { name } = e.target;
+    setItems((prevItems) =>
+      prevItems.map((item, i) =>
+        i === index ? { ...item, [name]: "" } : item
+      )
+    );
   };
 
   const handleUpdateInvoice = async () => {
@@ -908,8 +929,8 @@ const Invoicecreate = () => {
                 )}
               </div>
 
-              <div className="w-full md:w-auto flex flex-col items-center md:items-end text-xs">
-                <div className="text-txt-gray text-center md:text-right w-full md:w-auto mb-2">
+              <div className="w-full md:w-auto flex flex-col items-center md:items-end text-xs ">
+                <div className=" text-txt-blue font-medium text-center md:text-right w-full md:w-auto mb-2">
                   Name
                 </div>
                 {isEditable ? (
@@ -919,8 +940,10 @@ const Invoicecreate = () => {
                       name="name"
                       onChange={handleChange1}
                       value={formData.name}
-                      placeholder="Your Company Name"
-                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-gray-900 ${
+                      placeholder={isFocused.name ? "" : "Your Company Name"}
+                      onFocus={() => setIsFocused({ ...isFocused, name: true })}
+                      onBlur={() => setIsFocused({ ...isFocused, name: false })}
+                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-txt-gray ${
                         isSubmitted && formErrors.name ? "border-red-500" : ""
                       }`}
                     />
@@ -931,23 +954,30 @@ const Invoicecreate = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full p-2 mb-2">
+                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full py-0 mb-2">
                     {formData.name || "Your Company Name"}
                   </div>
                 )}
 
-                <div className="text-txt-gray text-center md:text-right w-full md:w-auto mb-2">
+                <div className="text-txt-blue font-medium text-center md:text-right w-full md:w-auto mb-2">
                   Phone Number
                 </div>
                 {isEditable ? (
                   <>
                     <input
-                      type="text"
+                      type="tel"
+                      maxLength="10"
                       name="mobileNumber"
                       onChange={handleChange1}
                       value={formData.mobileNumber}
-                      placeholder="00000 00000"
-                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-gray-900 ${
+                      placeholder={isFocused.mobileNumber ? "" : "Phone Number"}
+                      onFocus={() =>
+                        setIsFocused({ ...isFocused, mobileNumber: true })
+                      }
+                      onBlur={() =>
+                        setIsFocused({ ...isFocused, mobileNumber: false })
+                      }
+                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-txt-gray ${
                         isSubmitted && formErrors.mobileNumber
                           ? "border-red-500"
                           : ""
@@ -960,12 +990,12 @@ const Invoicecreate = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full p-2 mb-3">
+                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full py-0 mb-2">
                     {formData.mobileNumber || "00000 00000"}
                   </div>
                 )}
 
-                <div className="text-txt-gray text-center md:text-right w-full md:w-auto mb-2">
+                <div className="text-txt-blue font-medium text-center md:text-right w-full md:w-auto mb-2">
                   Email
                 </div>
                 {isEditable ? (
@@ -975,8 +1005,14 @@ const Invoicecreate = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange1}
-                      placeholder="Email id Here"
-                      className={`block w-3/4 md:w-full  text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-gray-900 ${
+                      placeholder={isFocused.email ? "" : "Email id Here"}
+                      onFocus={() =>
+                        setIsFocused({ ...isFocused, email: true })
+                      }
+                      onBlur={() =>
+                        setIsFocused({ ...isFocused, email: false })
+                      }
+                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-1 border placeholder-txt-gray ${
                         isSubmitted && formErrors.email ? "border-red-500" : ""
                       }`}
                     />
@@ -987,23 +1023,29 @@ const Invoicecreate = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full p-2 mb-3">
+                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full py-0 mb-2">
                     {formData.email || "Email id Here"}
                   </div>
                 )}
 
-                <div className="text-txt-gray text-center md:text-right w-full md:w-auto mb-2">
+                <div className="text-txt-blue font-medium text-center md:text-right w-full md:w-auto mb-2">
                   Address
                 </div>
                 {isEditable ? (
                   <>
                     <textarea
-                      rows="1"
+                      rows="3"
                       name="address"
                       onChange={handleChange1}
                       value={formData.address}
-                      placeholder="Address Here"
-                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-2 border placeholder-gray-900 ${
+                      placeholder={isFocused.address ? "" : "Address Here"}
+                      onFocus={() =>
+                        setIsFocused({ ...isFocused, address: true })
+                      }
+                      onBlur={() =>
+                        setIsFocused({ ...isFocused, address: false })
+                      }
+                      className={`block w-3/4 md:w-full text-txt-blue text-center md:text-right rounded p-2 mb-2 border placeholder-txt-gray ${
                         isSubmitted && formErrors.address
                           ? "border-red-500"
                           : ""
@@ -1016,7 +1058,7 @@ const Invoicecreate = () => {
                     )}
                   </>
                 ) : (
-                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full p-2 mb-2">
+                  <div className="text-txt-blue text-center md:text-right w-3/4 md:w-full py-0 mb-2">
                     {formData.address || "Address Here"}
                   </div>
                 )}
@@ -1098,8 +1140,15 @@ const Invoicecreate = () => {
                     className="border rounded p-2 flex-1 h-9"
                     maxLength="10"
                     name="phoneNumber"
+                    placeholder={isFocused.phonenumber ? "" : "phone number"}
                     onChange={handleChange2}
                     value={companyData.phoneNumber}
+                    onFocus={() =>
+                      setIsFocused({ ...isFocused, phonenumber: true })
+                    }
+                    onBlur={() =>
+                      setIsFocused({ ...isFocused, phonenumber: false })
+                    }
                   />
                 </div>
                 <div className="ml-28">
@@ -1170,7 +1219,7 @@ const Invoicecreate = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item, index) => (
+                  {items.map((item, index) => (
                       <tr key={item.id} className="border-t">
                         <td className="p-2" colSpan="3">
                           <input
@@ -1178,6 +1227,7 @@ const Invoicecreate = () => {
                             name="name"
                             value={item.name}
                             onChange={(e) => handleChange(index, e)}
+                            onFocus={(e) => handleFocus(index, e)}
                             className="w-full border rounded p-1"
                             placeholder="name of item/service..."
                           />
@@ -1193,8 +1243,9 @@ const Invoicecreate = () => {
                             name="quantity"
                             value={item.quantity}
                             onChange={(e) => handleChange(index, e)}
+                            onFocus={(e) => handleFocus(index, e)}
                             className="w-24 border rounded p-1 text-center"
-                            placeholder="1"
+
                           />
                           {formErrors[`quantity-${index}`] && (
                             <p className="text-red-500 text-xs mt-1">
@@ -1208,17 +1259,18 @@ const Invoicecreate = () => {
                             name="rate"
                             value={item.rate}
                             onChange={(e) => handleRate(index, e)}
+                            onFocus={(e) => handleFocus(index, e)}
                             className="w-24 border rounded p-1 text-center"
                           />
+
                           {formErrors[`rate-${index}`] && (
                             <p className="text-red-500 text-xs mt-1">
                               {formErrors[`rate-${index}`]}
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-1  ">
-                          {selectedCurrency.symbol}{" "}
-                          {(item.quantity * item.rate).toFixed(2)}
+                        <td className="px-4 py-1">
+                          {selectedCurrency.symbol} {(item.quantity * item.rate).toFixed(2)}
                         </td>
                         <td className="px-2 py-1">
                           <span
@@ -1254,20 +1306,13 @@ const Invoicecreate = () => {
                 <div className="flex text-right">
                   <div className="text-base mt-1 text-gray-500">Tax</div>
                   <div className="flex items-center space-x-2 ml-5">
-                    {/* <input
-                      type="number"
-                      value={taxRate}
-                      className="border rounded px-2 py-1 w-16"
-                      onChange={(e) => setTaxRate(Number(e.target.value))}
-                    />
-                    <span>%</span> */}
-                    <input
+                  <input
                       type="number"
                       value={taxRate}
                       className="border rounded px-2 py-1 w-16"
                       onChange={handleChange55}
-                      onBlur={handleBlur}
-                      disabled={!isEditable1} // Disable the input if editing is complete
+                      onFocus={(e) => handleFocusTaxRate(e)} // Clear the field when focused
+                      onBlur={handleBlur} // Optional: Restore the value or disable editing on blur
                     />
                     <span>%</span>
                   </div>
@@ -1351,8 +1396,10 @@ const Invoicecreate = () => {
                   <input
                     type="number"
                     value={amountPaid}
-                    className="border rounded px-2 py-1 w-24 text-base  text-gray-500 ml-4"
+                    className="border rounded px-2 py-1 w-24 text-base text-gray-500 ml-4"
                     onChange={handleAmountPaidChange}
+                    onFocus={(e) => handleFocusAmountPaid(e)} // Clear on focus
+                    onBlur={handleBlurAmountPaid} // Optional: Restore value if empty
                   />
                 </div>
               </div>
@@ -1395,15 +1442,21 @@ const Invoicecreate = () => {
                   onClick={openModal}
                 >
                   {savedSignature ? (
-                    <img
-                      src={
-                        typeof savedSignature === "string"
-                          ? savedSignature
-                          : URL.createObjectURL(savedSignature)
-                      }
-                      alt="Saved Signature"
-                      className="h-12"
-                    />
+                    <div>
+                      <img
+                        src={
+                          typeof savedSignature === "string"
+                            ? savedSignature
+                            : URL.createObjectURL(savedSignature)
+                        }
+                        alt="Saved Signature"
+                        className="h-12"
+                      />
+
+                      <div className="text-black font-medium mt-2">
+                        Your Signature
+                      </div>
+                    </div>
                   ) : (
                     "Add Signature"
                   )}
@@ -1453,13 +1506,15 @@ const Invoicecreate = () => {
                         }}
                       />
                     ) : (
-                      <img
-                        src={URL.createObjectURL(savedSignature)}
-                        alt="Saved Signature"
-                        className="my-4 border rounded"
-                        style={{ width: 300, height: 120 }}
-                        name="signlogo"
-                      />
+                      <div>
+                        <img
+                          src={URL.createObjectURL(savedSignature)}
+                          alt="Saved Signature"
+                          className="my-4 border rounded"
+                          style={{ width: 300, height: 120 }}
+                          name="signlogo"
+                        />
+                      </div>
                     )}
                     <div className="flex justify-between items-center mt-4">
                       {!isSignatureSaved && (
@@ -1523,7 +1578,7 @@ const Invoicecreate = () => {
               {user && (
                 <button
                   className="flex items-center text-custom-blue w-full md:w-auto"
-                  onClick={()=> navigate('/draft')}
+                  onClick={() => navigate("/draft")}
                 >
                   {/* <img src={SaveIcon} alt="Save Draft" className="mr-2" />  */}
                   + Drafts

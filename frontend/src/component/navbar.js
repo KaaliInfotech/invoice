@@ -15,7 +15,6 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const user = localStorage.getItem("token");
   const userName = getUserIdFromToken();
-  
 
   // const invoicelength = localStorage.getItem("invoicelength");
   // useEffect(() => {
@@ -86,7 +85,7 @@ const Navbar = () => {
         <header className="bg-white shadow-md py-4">
           <div className="container mx-auto flex flex-row items-center justify-between px-4">
             <div className="flex-shrink-0">
-              <Logo alt="Invoice Sheet Logo" onClick={() => navigate("/")}/>
+              <Logo alt="Invoice Sheet Logo" onClick={() => navigate("/")} />
             </div>
             <button
               onClick={toggleMenu}
@@ -156,6 +155,10 @@ const Navbar = () => {
                   href="/settings"
                 >
                   Settings
+                </a>
+                
+                <a href="/draft" className="text-txt-blue hover:text-txt-hover block">
+                  Draft
                 </a>
                 <button
                   onClick={() => navigate("/upgrade")}
@@ -250,6 +253,9 @@ const Navbar = () => {
                 >
                   Settings
                 </a>
+                <a href="/draft" className="text-txt-blue hover:text-txt-hover block">
+                  Draft
+                </a>
                 <button className="bg-custom-blue text-white py-2 px-4 rounded-full hover:bg-blue-700 flex items-center block">
                   <img src={upgradeIcon} alt="Upgrade" className="mr-2" />
                   Upgrade
@@ -302,7 +308,7 @@ const Navbar = () => {
           <div className="container mx-auto flex flex-col md:flex-row items-center px-4">
             <div className="flex items-center justify-between w-full md:w-auto">
               <div className="flex-shrink-0">
-                <Logo alt="Invoice Sheet Logo" />
+                <Logo alt="Invoice Sheet Logo" onClick={() => navigate("/")} />
               </div>
 
               <button
@@ -336,10 +342,7 @@ const Navbar = () => {
             </div>
 
             <nav className="hidden md:flex space-x-8 ml-20">
-              <a
-                onClick={() => navigate("/faq")}
-                className="text-gray-900 hover:underline"
-              >
+              <a onClick={() => navigate("/faq")} className="text-gray-900">
                 Help
               </a>
               <a href="#" className="text-gray-900">
