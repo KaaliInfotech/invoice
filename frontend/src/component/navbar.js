@@ -214,25 +214,6 @@ const Navbar = () => {
           {isMenuOpen && (
             <div className="md:hidden bg-white shadow-md absolute left-0 w-full z-10">
               <nav className="flex flex-col items-start space-y-2 px-4 py-4">
-                {/* {showUpgradeMessage && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm mx-auto">
-                      <h3 className="text-xl text-txt-blue mb-4">
-                        Upgrade Required
-                      </h3>
-                      <p className="text-txt-blue mb-4">
-                        You have reached the limit of 5 invoices. Please upgrade
-                        your account to create more invoices.
-                      </p>
-                      <button
-                        onClick={closeModal}
-                        className="bg-custom-blue text-white py-2 px-4 rounded-lg"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                )} */}
                 <a
                   href="#createinvoice"
                   onClick={handleCreateInvoice}

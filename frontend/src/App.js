@@ -54,7 +54,6 @@ import Upgrade from "./component/upgrade";
 import Custom from "./component/Invoice/customtemplate";
 import { GoogleOAuthProvider } from "@react-oauth/google"; 
 import Draft from "./component/draft";
-import PaymentForm from "./component/phonepe";
 function App() {
   return (
     <Router>
