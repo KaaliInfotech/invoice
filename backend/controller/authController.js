@@ -6,7 +6,119 @@ const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const OTP = require("../models/otp");
 const axios = require("axios");
+const puppeteer = require('puppeteer');
 
+module.exports.instagramDownloader = async (req, res) => {
+  const { url } = req.query;
+
+  if (!url) {
+      return res.status(400).json({ error: 'Please provide a URL.' });
+  }
+
+  try {
+      const browser = await puppeteer.launch({ headless: true });
+      const page = await browser.newPage();
+
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3');
+      await page.goto(url, { waitUntil: 'networkidle2' });
+
+      const mediaUrl = await page.evaluate(() => {
+          if (window.location.hostname.includes('instagram.com')) {
+              const videoTag = document.querySelector('video');
+              if (videoTag) {
+                  return videoTag.src;
+              }
+
+              const metaTags = document.querySelectorAll('meta[property="og:image"]');
+              if (metaTags.length > 0) {
+                  return metaTags[0].content;
+              }
+
+              const ogVideoTag = document.querySelector('meta[property="og:video"]');
+              if (ogVideoTag) {
+                  return ogVideoTag.content;
+              }
+          }
+
+          if (window.location.hostname.includes('facebook.com')) {
+              const videoTag = document.querySelector('video');
+              if (videoTag) {
+                  return videoTag.src;
+              }
+
+              const metaTags = document.querySelectorAll('meta[property="og:image"]');
+              if (metaTags.length > 0) {
+                  return metaTags[0].content;
+              }
+
+              const ogVideoTag = document.querySelector('meta[property="og:video"]');
+              if (ogVideoTag) {
+                  return ogVideoTag.content;
+              }
+          }
+
+          return null; 
+      });
+
+      await browser.close();
+
+      if (mediaUrl) {
+          console.log(mediaUrl); 
+          res.json({ downloadUrl: mediaUrl }); k
+      } else {
+          res.status(404).json({ error: 'Media not found.' }); 
+      }
+  } catch (error) {
+      console.error(error.message); 
+      res.status(500).json({ error: 'Failed to fetch media.' });
+  }
+}
+
+const ytdl = require("@distube/ytdl-core");
+
+module.exports.youtubeDownloader = async (req, res) => {
+  const videoUrl = req.query.url;
+
+  if (!videoUrl) {
+    return res.status(400).send("Please provide a video URL.");
+  }
+
+  try {
+    const isValidUrl = ytdl.validateURL(videoUrl);
+    if (!isValidUrl) {
+      return res.status(400).send("Invalid YouTube URL.");
+    }
+
+    const videoInfo = await ytdl.getInfo(videoUrl);
+
+    const format = videoInfo.formats.find(
+      (f) => f.hasVideo && f.hasAudio
+    );
+
+    if (!format || !format.url) {
+      return res.status(500).send("No downloadable format found.");
+    }
+
+    res.json({
+      message: "Video URL fetched successfully.",
+      downloadUrl: format.url,
+      title: videoInfo.videoDetails.title,
+      quality: format.qualityLabel,
+      duration: `${Math.floor(videoInfo.videoDetails.lengthSeconds / 60)}:${
+        videoInfo.videoDetails.lengthSeconds % 60
+      }`,
+    });
+  } catch (error) {
+    console.error("Error Details:", error);
+
+    if (error.message.includes("Could not extract functions")) {
+      return res.status(500).send("YouTube has updated its API. Please try again later.");
+    }
+
+    res.status(500).send("Failed to process video.");
+  }
+  
+}
 module.exports.signup = async (req, res) => {
   const { firstname, email, password, confirmpassword } = req.body;
 
@@ -348,107 +460,88 @@ module.exports.signinWithGoogle = async (req, res) => {
   }
 };
 
+const MERCHANT_KEY="96434309-7796-489d-8924-ab56988a6076"
+const MERCHANT_ID="PGTESTPAYUAT86"
+const MERCHANT_BASE_URL="https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay"
+const MERCHANT_STATUS_URL="https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/status"
 
-module.exports.Phonepe = async (req, res) => {
-  const phonePeBaseURL = "https://api-preprod.phonepe.com/apis/pg-sandbox";
-  const saltKey = "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399";
-  const saltIndex = 1;
-  const merchantId = "PGTESTPAYUAT";
-  const payload = {
-    merchantId: merchantId,
-    merchantTransactionId: req.body.orderId,
-    merchantUserId: "MUID123",
-    amount: req.body.amount,
-    redirectUrl: "https://webhook.site/redirect-url",
-    redirectMode: "REDIRECT",
-    mobileNumber: "9999999999",
-    paymentInstrument: { type: "PAY_PAGE" },
-  };
-  function sha256(data) {
-    return crypto.createHash("sha256").update(data).digest("hex");
+const redirectUrl="http://localhost:5001/api/auth/status"
+
+const successUrl="http://localhost:3001/"
+const failureUrl="http://localhost:3001/"
+module.exports.newPayment = async (req, res) => {
+
+  const {name, mobileNumber, amount, transactionId} = req.body;
+
+  //payment
+  const paymentPayload = {
+      merchantId : MERCHANT_ID,
+      merchantUserId: name,
+      mobileNumber: mobileNumber,
+      amount : amount * 100,
+      merchantTransactionId: transactionId,
+      redirectUrl: `${redirectUrl}/?id=${transactionId}`,
+      redirectMode: 'POST',
+      paymentInstrument: {
+          type: 'PAY_PAGE'
+      }
   }
-  const apiendpoint = "/pg/v1/pay";
-  const buffreObj = Buffer.from(JSON.stringify(payload), "utf8");
-  const base64string = buffreObj.toString("base64");
-  const xverify =
-    sha256(base64string + apiendpoint + saltKey) + "###" + saltIndex;
-  const options = {
-    method: "post",
-    url: `${phonePeBaseURL}${apiendpoint}`,
+
+  const payload = Buffer.from(JSON.stringify(paymentPayload)).toString('base64')
+  const keyIndex = 1
+  const string  = payload + '/pg/v1/pay' + MERCHANT_KEY
+  const sha256 = crypto.createHash('sha256').update(string).digest('hex')
+  const checksum = sha256 + '###' + keyIndex
+
+  const option = {
+      method: 'POST',
+      url:MERCHANT_BASE_URL,
+      headers: {
+          accept : 'application/json',
+          'Content-Type': 'application/json',
+          'X-VERIFY': checksum
+      },
+      data :{
+          request : payload
+      }
+  }
+  try {
+      
+      const response = await axios.request(option);
+      console.log(response.data.data.instrumentResponse.redirectInfo.url)
+       res.status(200).json({msg : "OK", url: response.data.data.instrumentResponse.redirectInfo.url})
+  } catch (error) {
+      console.log("error in payment", error)
+      res.status(500).json({error : 'Failed to initiate payment'})
+  }
+
+}
+
+module.exports.checkStatus = async (req, res) => {
+  const merchantTransactionId = req.query.id;
+
+  const keyIndex = 1;
+  const string =
+    `/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}` + MERCHANT_KEY;
+  const sha256 = crypto.createHash("sha256").update(string).digest("hex");
+  const checksum = sha256 + "###" + keyIndex;
+
+  const option = {
+    method: "GET",
+    url: `${MERCHANT_STATUS_URL}/${MERCHANT_ID}/${merchantTransactionId}`,
     headers: {
       accept: "application/json",
       "Content-Type": "application/json",
-      "X-verify": xverify,
-    },
-    data: {
-      request: base64string,
+      "X-VERIFY": checksum,
+      "X-MERCHANT-ID": MERCHANT_ID,
     },
   };
-  axios
-    .request(options)
-    .then(function (response) {
-      console.log(response, "LOG>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-      res.send(response.data);
-    })
-    .catch(function (error) {
-      console.error(error);
-    });
+
+  axios.request(option).then((response) => {
+    if (response.data.success === true) {
+      return res.redirect(successUrl);
+    } else {
+      return res.redirect(failureUrl);
+    }
+  });
 };
-
-// const phonePeBaseURL = "https://api-preprod.phonepe.com/apis/pg-sandbox";
-// const saltKey = "099eb0cd-02cf-4e2a-8aca-3e6c6aff0399";
-// const saltIndex = 1;
-// const merchantId = 'PGTESTPAYUAT';
-
-// module.exports.Phonepe = async (req, res) => {
-//   const payload = {
-//     merchantId: merchantId,
-//     merchantTransactionId: req.body.orderId,
-//     merchantUserId: 'MUID123',
-//     amount: req.body.amount,
-//     redirectUrl: 'https://webhook.site/redirect-url',
-//     redirectMode: 'REDIRECT',
-//     mobileNumber: '9999999999',
-//     paymentInstrument: { type: 'PAY_PAGE' },
-//   };
-
-//   try {
-//     const apiendpoint = '/pg/v1/pay';
-//     const bufferObj = Buffer.from(JSON.stringify(payload), 'utf8');
-//     const base64string = bufferObj.toString("base64");
-
-//     // Generate the SHA256 hash
-//     const hash = crypto.createHash('sha256');
-//     hash.update(base64string + apiendpoint + saltKey);
-//     const hashedString = hash.digest('hex');
-
-//     const xverify = `${hashedString}###${saltIndex}`;
-
-//     const options = {
-//       method: 'post',
-//       url: `${phonePeBaseURL}${apiendpoint}`,
-//       headers: {
-//         accept: 'text/plain',
-//         'Content-Type': 'application/json',
-//         'X-verify': xverify
-//       },
-//       data: {
-//         request: base64string
-//       }
-//     };
-
-//     axios
-//       .request(options)
-//       .then(function (response) {
-//         console.log(response.data);
-//         res.status(200).json(response.data);
-//       })
-//       .catch(function (error) {
-//         console.error(error);
-//         res.status(500).json({ error: error.response ? error.response.data : error.message });
-//       });
-//   } catch (error) {
-//     console.error('Payment initiation failed:', error);
-//     res.status(500).json({ error: error.response ? error.response.data : error.message });
-//   }
-// };
